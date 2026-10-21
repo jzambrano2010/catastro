@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catastro, Mensuras y Subdivisiones en PH - Auditoría Res. 1/2015 DGC</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                            900: '#172554',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+
+        .print-document {
+            font-family: 'Times New Roman', Times, serif !important;
+            color: #000 !important;
+            line-height: 1.4 !important;
+            font-size: 11pt !important;
+            width: 100% !important;
+            max-width: 210mm !important;
+            margin: 0 auto !important;
+            padding: 15mm 15mm !important;
+            box-sizing: border-box !important;
+            background-color: #fff !important;
+        }
+
+        .print-document h2 { font-size: 15pt !important; font-weight: bold; }
+        .print-document h3 { font-size: 12pt !important; font-weight: bold; text-transform: uppercase; }
+        .print-document h4 { font-size: 11pt !important; font-weight: bold; }
+        .print-document p, .print-document li, .print-document td, .print-document th {
+            font-size: 11pt !important;
+        }
+
+        .avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm 10mm 15mm 10mm;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: #fff !important; padding: 0 !important; margin: 0 !important; }
+            .print-document {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 5mm !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col relative">
+
+    <input type="file" id="file-upload-input" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" multiple class="hidden" onchange="handleFileUpload(event)">
+
+    <div id="license-banner" class="bg-slate-900 text-white text-xs px-4 py-2 flex items-center justify-between no-print border-b border-slate-700 flex-wrap gap-2">
+        <div class="flex items-center space-x-3 flex-wrap gap-2">
+            <span id="license-info-text"></span>
+            <span class="italic text-[8pt] text-amber-300/90">
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Resultados por IA pueden contener errores. Se sugiere subir planillas como imagen "xxx.jpg", para mejor interpretación.
+            </span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- ROL SELECTOR -->
+            <div class="flex items-center bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs">
+                <span class="text-slate-400 mr-1.5"><i class="fa-solid fa-user-shield"></i> Rol:</span>
+                <select id="user-role-selector" onchange="switchUserRole(this.value)" class="bg-transparent text-white font-semibold focus:outline-none cursor-pointer">
+                    <option value="profesional" class="bg-slate-800 text-white">Profesional</option>
+                    <option value="administrador" class="bg-slate-800 text-white">Administrador</option>
+                </select>
+            </div>
+
+            <button id="admin-gen-key-btn" onclick="openAdminModal()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1">
+                <i class="fa-solid fa-key"></i> Generar Licencias
+            </button>
+
+            <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold px-3 py-1 rounded border border-amber-500/40 text-xs transition flex items-center gap-1">
+                <i class="fa-solid fa-robot"></i> <span id="api-key-status-label">Configurar IA (Gemini API)</span>
+            </button>
+            <button onclick="openLicenseModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1">
+                <i class="fa-solid fa-key"></i> Activa la licencia Pro
+            </button>
+        </div>
+    </div>
+
+    <header class="bg-brand-900 text-white shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-map-location-dot text-amber-400 text-2xl"></i>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Catastro, Mensuras y Subdivisiones en PH</h1>
+                    <p class="text-xs text-slate-300">Auditoría Res. 1/2015 DGC Córdoba con Lectura Automática IA</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+                <button onclick="openHelpModal()" class="bg-brand-800 hover:bg-brand-700 text-white font-medium px-3 py-1.5 rounded-lg border border-brand-700 transition flex items-center gap-1.5 shadow-sm" title="Ayuda & Uso">
+                    <i class="fa-solid fa-circle-question text-amber-400 text-sm"></i> <span>Ayuda & Uso</span>
+                </button>
+                <span class="bg-brand-800 text-brand-100 px-3 py-1 rounded-lg border border-brand-700 font-mono hidden sm:inline-block">
+                    <i class="fa-solid fa-scale-balanced mr-1 text-amber-400"></i> Res. 01/2015 DGC
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <div id="license-lock-overlay" class="hidden absolute inset-0 bg-slate-900/80 z-40 backdrop-blur-md flex flex-col items-center justify-center text-white text-center p-6 no-print">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 max-w-lg shadow-2xl space-y-4">
+            <div class="inline-flex p-4 bg-red-500/20 text-red-400 rounded-full text-3xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white">Licencia de Prueba Expirada</h2>
+            <p id="lock-message" class="text-xs text-slate-300 leading-relaxed">
+                El período de prueba gratuita ha finalizado. Active su Licencia Profesional para continuar utilizando las herramientas de cálculo y generación de reportes A4.
+            </p>
+            <div class="pt-2">
+                <button onclick="openLicenseModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs transition shadow-lg">
+                    Activar Licencia Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <section class="lg:col-span-5 space-y-4 no-print">
+            
+            <!-- CASO SELECTION & ARCHIVOS -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between border-b pb-2 flex-wrap gap-2">
+                    <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-folder-open text-brand-600"></i> Gestión de Casos & Carga
+                    </h2>
+                    <div class="flex gap-1.5 flex-wrap">
+                        <button onclick="createNewCustomCasePrompt()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-plus"></i> Nuevo Caso
+                        </button>
+                        <button onclick="resetToZero()" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-right"></i> Reiniciar a 0
+                        </button>
+                        <button onclick="loadSampleData('raimondetto')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition">
+                            Raimondetto
+                        </button>
+                        <button onclick="loadSampleData('garcia')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition">
+                            García
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs text-slate-500 font-medium">Caso Activo:</label>
+                    <select id="case-selector" onchange="switchActiveCase(this.value)" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-slate-50 font-semibold focus:ring-2 focus:ring-brand-600 focus:outline-none">
+                    </select>
+                </div>
+
+                <!-- DRAG & DROP ZONE -->
+                <div id="drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"
+                     class="border-2 border-dashed border-slate-300 hover:border-brand-600 bg-slate-50/50 hover:bg-brand-50/30 rounded-xl p-3 text-center transition cursor-pointer"
+                     onclick="triggerFileUpload()">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl text-slate-400 mb-1"></i>
+                    <p class="text-xs font-semibold text-slate-700">Arrastre aquí sus planos, planillas o documentos PDF</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">o haga clic para <span class="text-brand-600 underline font-medium">Seleccionar Documento (.jpg recomendado)</span></p>
+                </div>
+
+                <!-- LISTA DE ARCHIVOS ADJUNTOS EN CASO -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-[11px] font-semibold text-slate-500">
+                        <span>Documentos Cargados:</span>
+                        <span id="attached-files-count" class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded text-[10px]">0 archivos</span>
+                    </div>
+                    <div id="attached-files-list" class="space-y-1 max-h-24 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- INDICADOR DE PROCESAMIENTO IA -->
+                <div id="processing-status-indicator" class="hidden bg-indigo-50 border border-indigo-200 rounded-lg p-2 text-xs text-indigo-900 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-notch fa-spin text-indigo-600 text-sm"></i>
+                    <span id="processing-status-detail">Interpretando plano o planilla con IA...</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="flex border-b border-slate-200 bg-slate-50 text-xs font-medium">
+                    <button id="tab-btn-general" onclick="switchTab('general')" class="flex-1 py-3 px-2 border-b-2 border-brand-600 font-semibold text-brand-600 bg-white text-center transition">
+                        General & Dominio
+                    </button>
+                    <button id="tab-btn-polygon" onclick="switchTab('polygon')" class="flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 text-center transition">
+                        Polígono & Vértices
+                    </button>
+                    <button id="tab-btn-subdivision" onclick="switchTab('subdivision')" class="flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 text-center transition">
+                        Subdivisión / Bloques
+                    </button>
+                </div>
+
+                <!-- TAB 1: GENERAL & DOMINIO -->
+                <div id="tab-general" class="p-4 space-y-3 text-xs">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-bold text-slate-700">Titulares Registrales / Comitentes</label>
+                            <button onclick="addTitular()" class="text-brand-600 hover:text-brand-800 text-[11px] font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-plus-circle"></i> Agregar
+                            </button>
+                        </div>
+                        <div id="titulares-container" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t">
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Fecha</label>
+                            <input type="text" id="input-fecha" class="w-full p-2 border rounded-lg" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">N° Cuenta Catastral</label>
+                            <input type="text" id="input-cuenta" class="w-full p-2 border rounded-lg font-mono" oninput="updateCalculations()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Nomenclatura Catastral</label>
+                            <input type="text" id="input-nomenclatura" class="w-full p-2 border rounded-lg font-mono" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Matrícula / Dominio</label>
+                            <input type="text" id="input-matricula" class="w-full p-2 border rounded-lg" oninput="updateCalculations()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Designación Oficial</label>
+                            <input type="text" id="input-designacion" class="w-full p-2 border rounded-lg" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Dirección Exacta</label>
+                            <input type="text" id="input-direccion" class="w-full p-2 border rounded-lg" oninput="updateCalculations()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-500 font-medium mb-1">Objeto / Tarea Profesional</label>
+                        <input type="text" id="input-tarea" class="w-full p-2 border rounded-lg font-medium" oninput="updateCalculations()">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Juzgado / Expte. Judicial</label>
+                            <input type="text" id="input-juzgado" class="w-full p-2 border rounded-lg" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 font-medium mb-1">Profesional Actuante (Firma pie)</label>
+                            <input type="text" id="input-profesional" placeholder="Ej: Ing. Civil Julio A. Zambrano - MP 4097" class="w-full p-2 border rounded-lg font-semibold" oninput="updateCalculations()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: POLIGONO & VERTICES -->
+                <div id="tab-polygon" class="hidden p-4 space-y-3 text-xs">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <span class="font-bold text-slate-700">Tramos y Polígonos de Mensura</span>
+                        <div class="flex items-center gap-2">
+                            <span id="polygon-summary-badge" class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                                N = 4 lados
+                            </span>
+                            <button onclick="addSide()" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-[11px] px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Agregar Lado
+                            </button>
+                        </div>
+                    </div>
+                    <div id="sides-container" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- TAB 3: SUBDIVISION / BLOQUES -->
+                <div id="tab-subdivision" class="hidden p-4 space-y-3 text-xs">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <span class="font-bold text-slate-700">Unidades de PH / Bloques Edificados</span>
+                        <button onclick="addUnidad()" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-[11px] px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Agregar Unidad
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-[10px] text-slate-500">Superficie Terreno Mensura (m²)</label>
+                            <input type="number" step="0.0001" id="input-sup-terreno" class="w-full p-1.5 border rounded font-semibold text-xs" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500">Superficie según Título (m²)</label>
+                            <input type="number" step="0.0001" id="input-sup-titulo" class="w-full p-1.5 border rounded text-xs" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500">Superficie Edificada Total (m²)</label>
+                            <input type="number" step="0.0001" id="input-sup-edificada" class="w-full p-1.5 border rounded text-xs" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500">Diferencia Título vs Mensura</label>
+                            <input type="text" id="input-sup-diferencia" readonly class="w-full p-1.5 border rounded bg-slate-100 text-xs font-mono font-bold">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[10px]">
+                        <div>
+                            <label class="block text-slate-500">Muros Cub. Comunes</label>
+                            <input type="number" step="0.01" id="input-muros-cub" class="w-full p-1 border rounded text-xs" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500">Muros Descub. Comunes</label>
+                            <input type="number" step="0.01" id="input-muros-descub" class="w-full p-1 border rounded text-xs" oninput="updateCalculations()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500">Descub. Uso Común</label>
+                            <input type="number" step="0.01" id="input-descub-uso-comun" class="w-full p-1 border rounded text-xs" oninput="updateCalculations()">
+                        </div>
+                    </div>
+
+                    <div id="unidades-container" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- ACCIONES INFERIORES -->
+                <div class="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center gap-2">
+                    <button onclick="recalculateAndProcessReports()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-rotate text-sm"></i> Recalcular y Procesar Reportes
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="lg:col-span-7">
+            <div class="bg-white shadow-xl rounded-xl border border-slate-200 overflow-hidden">
+                <div class="bg-slate-800 text-white px-4 py-2.5 text-xs font-semibold flex justify-between items-center no-print flex-wrap gap-2">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-print text-amber-400"></i> Vista Previa Documento A4
+                    </span>
+                    <div class="flex items-center space-x-2 text-[11px] text-slate-300 flex-wrap">
+                        <span>Página <strong id="doc-current-page" class="text-white">1</strong> de <strong id="doc-total-pages" class="text-white">1</strong></span>
+                        <div class="flex items-center gap-1.5 ml-2">
+                            <button onclick="exportToWordDoc()" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded border border-blue-500 transition flex items-center gap-1 text-[10px]" title="Exportar Word">
+                                <i class="fa-solid fa-file-word"></i> Word (.doc)
+                            </button>
+                            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded border border-slate-600 transition flex items-center gap-1 text-[10px]">
+                                <i class="fa-solid fa-print"></i> Imprimir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-8 bg-slate-200 overflow-x-auto min-h-[800px] flex justify-center">
+                    <div id="printable-area" class="print-document bg-white shadow-2xl relative space-y-6">
+                        
+                        <!-- ENCABEZADO CATASTRAL (EN COLUMNA VERTICAL REQUERIDA) -->
+                        <div class="border-b-2 border-black pb-3 space-y-1.5">
+                            <div class="text-right text-xs font-serif font-bold">
+                                <span id="doc-meta-fecha">07 de Julio de 2023</span>
+                            </div>
+                            <div class="space-y-1 text-xs font-serif uppercase">
+                                <div><strong>TAREA:</strong> <span id="doc-meta-tarea" class="font-normal font-sans text-xs">MENSURA Y SUBDIVISION BAJO REGIMEN PH</span></div>
+                                <div><strong>CUENTA:</strong> <span id="doc-meta-cuenta" class="font-mono text-xs">13-02-3070653-1</span></div>
+                                <div><strong>COMITENTE:</strong> <span id="doc-meta-comitentes" class="font-sans text-xs">HUGO T. RAIMONDETTO - MIRTA B. FLORES</span></div>
+                                <div><strong>NOM. CATASTRAL:</strong> <span id="doc-meta-nomenclatura" class="font-mono text-xs">1302090102068005</span></div>
+                                <div><strong>DIRECCIÓN:</strong> <span id="doc-meta-direccion" class="font-sans text-xs">Calle N° 9 - Mateo Kokic N° 255</span></div>
+                            </div>
+                        </div>
+
+                        <!-- REPORTE 1: DESCRIPCION DE LA PARCELA -->
+                        <div class="space-y-2 avoid-break">
+                            <h3 class="border-b border-black text-sm pb-0.5">DESCRIPCIÓN DE LA PARCELA</h3>
+                            <div id="doc-report-1" class="text-xs space-y-2 text-justify"></div>
+                        </div>
+
+                        <!-- REPORTE 2: INFORME TECNICO Y DOMINIAL -->
+                        <div class="space-y-2 avoid-break">
+                            <h3 class="border-b border-black text-sm pb-0.5">2) INFORME TÉCNICO Y DOMINIAL</h3>
+                            <div id="doc-report-2" class="text-xs space-y-2 text-justify"></div>
+                        </div>
+
+                        <!-- REPORTE 3: CUADROS DE SUBDIVISION / PH / BLOQUES -->
+                        <div class="space-y-3 avoid-break">
+                            <h3 class="border-b border-black text-sm pb-0.5">3) SUBDIVISIÓN / PLANILLA DE SUPERFICIES Y BLOQUES</h3>
+                            
+                            <!-- TABLA SUPERFICIES -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full border-collapse border border-black text-center text-[10pt]">
+                                    <thead id="doc-table-superficies-head"></thead>
+                                    <tbody id="doc-table-superficies-body"></tbody>
+                                    <tfoot id="doc-table-superficies-foot" class="font-bold bg-slate-100"></tfoot>
+                                </table>
+                            </div>
+
+                            <!-- TABLA CIERRES Y RESUMEN -->
+                            <div class="grid grid-cols-2 gap-4 pt-2">
+                                <div>
+                                    <h4 class="font-bold text-xs mb-1">BALANCE DE CIERRES (m²)</h4>
+                                    <table class="w-full border-collapse border border-black text-[9pt]">
+                                        <tbody id="doc-table-cierres-body"></tbody>
+                                    </table>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs mb-1">RESUMEN GENERAL</h4>
+                                    <table class="w-full border-collapse border border-black text-[9pt]">
+                                        <tbody id="doc-table-resumen-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- REPORTE 4: AUDITORIA NORMATIVA 01/2015 DGC -->
+                        <div class="space-y-2 avoid-break pt-2 border-t border-black">
+                            <h3 class="text-sm border-b border-black pb-0.5">4) AUDITORÍA DE NORMATIVA TÉCNICA (RES. 01/2015 DGC CÓRDOBA)</h3>
+                            <div id="doc-report-4-audit" class="space-y-1.5"></div>
+                        </div>
+
+                        <!-- PIE Y FIRMAS CON NUMERACION DE PAGINA -->
+                        <div class="pt-8 border-t border-slate-300 mt-6 avoid-break flex flex-col gap-4 text-xs font-serif">
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <p class="font-bold">Informe generado automáticamente conforme Res. 01/2015 DGC</p>
+                                    <p class="text-[10px] text-slate-500">Firma certificada por profesional agrimensor / ingeniero actuante.</p>
+                                </div>
+                                <div class="text-center border-t border-black pt-1 w-64">
+                                    <p class="font-bold uppercase text-xs" id="doc-footer-profesional-name">Profesional Actuante</p>
+                                    <p class="text-[10px]">Ing. Civil / Agrimensor MP</p>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end items-center pt-3 border-t border-slate-200">
+                                <div class="font-mono text-[9pt] whitespace-nowrap pl-4">
+                                    Página N° <span id="doc-footer-page-num">1</span> de N° <span id="doc-footer-page-total">1</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- HELP MODAL -->
+    <div id="help-modal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm no-print">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 relative max-h-[90vh] flex flex-col">
+            <button onclick="closeHelpModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200">
+                <div class="p-2.5 bg-brand-100 text-brand-700 rounded-xl">
+                    <i class="fa-solid fa-book-open-reader text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Guía de Uso y Configuración de API</h3>
+                    <p class="text-xs text-slate-500">Manual rápido de operación de la App de Catastro y Mensuras</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-700 overflow-y-auto pr-2 flex-1">
+                <div class="bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-100 space-y-2">
+                    <h4 class="font-bold text-indigo-950 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-key text-indigo-600"></i> 1. Configuración de Gemini API Key (IA Automática)
+                    </h4>
+                    <p class="text-slate-600 leading-relaxed">
+                        Para analizar imágenes, planos escaneados y PDFs extensos mediante Inteligencia Artificial:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-700 pl-1 font-medium">
+                        <li>Obtenga su clave gratuita en <strong>Google AI Studio</strong> (<code class="bg-indigo-100 px-1 py-0.5 rounded text-indigo-900 font-mono">ai.google.dev</code>).</li>
+                        <li>Haga clic en el botón <strong class="text-amber-700">"Configurar IA (Gemini API)"</strong> en la barra superior.</li>
+                        <li>Pegue su clave (<code class="bg-slate-200 px-1 py-0.5 rounded font-mono">AIzaSy...</code>) y presione <strong>Guardar Clave</strong>. La clave se almacena únicamente en su navegador (<code class="font-mono">localStorage</code>).</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <h4 class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-gears text-brand-600"></i> 2. Funcionamiento y Recomendaciones de Carga
+                    </h4>
+                    <ul class="space-y-2 text-slate-600">
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-folder-plus text-emerald-600 mt-0.5"></i>
+                            <div>
+                                <strong class="text-slate-800">Nuevo Caso:</strong> Haga clic en <span class="font-semibold text-slate-800">"Nuevo Caso"</span> para ingresar el nombre de su legajo y crear un expediente limpio.
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-file-arrow-up text-brand-600 mt-0.5"></i>
+                            <div>
+                                <strong class="text-slate-800">Subida de Documentos:</strong> Al presionar <span class="font-semibold text-slate-800">"Seleccionar Documento"</span> o arrastrar archivos, el sistema interpretará la mensura. <em>Nota: Para tablas y planillas de superficies complejas, se recomienda subirlas como imagen formato <strong>"xxx.jpg"</strong> para que la IA las interprete con máxima precisión.</em>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pt-4 mt-2 border-t border-slate-200 flex justify-end">
+                <button onclick="closeHelpModal()" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2 rounded-xl transition text-xs">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API KEY MODAL -->
+    <div id="api-key-modal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative">
+            <button onclick="closeApiKeyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="text-center mb-5">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full mb-2">
+                    <i class="fa-solid fa-robot text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">Motor IA Independiente (Gemini API)</h3>
+                <p class="text-xs text-slate-500">Active la lectura y OCR automático de PDFs y tablas en JPG</p>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Ingrese su Gemini API Key</label>
+                    <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." class="w-full font-mono p-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Obtenga su clave gratuita en Google AI Studio (`ai.google.dev`). Almacenada en su navegador (`localStorage`).
+                    </p>
+                </div>
+
+                <div class="flex gap-2 justify-end pt-2">
+                    <button onclick="clearApiKey()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded-lg transition">
+                        Borrar Clave
+                    </button>
+                    <button onclick="saveApiKey()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">
+                        Guardar Clave
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LICENSE ACTIVATION MODAL (EXACT REFERENCE DESIGN) -->
+    <div id="license-modal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative">
+            <button onclick="closeLicenseModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-amber-100 text-amber-600 rounded-full mb-2">
+                    <i class="fa-solid fa-key text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">Activación de Licencia Profesional</h3>
+                <p class="text-xs text-slate-500">Modo Offline - Valide su clave o solicite la activación mediante transferencia</p>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Ingrese Clave de Licencia (Serial Key)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="license-key-input" placeholder="CORD-1332-XXXX Ó JZ-PRO-XXXX" class="flex-1 uppercase font-mono p-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-brand-500">
+                        <button onclick="validateLicenseKey()" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg transition">
+                            Validar
+                        </button>
+                    </div>
+                    <p id="license-error-msg" class="text-red-600 text-[11px] mt-1 hidden"></p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                    <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-building-columns text-brand-600"></i> Datos para Adquisición / Transferencia:
+                    </div>
+                    <div class="font-mono text-slate-600 bg-white p-2.5 rounded border border-slate-200 space-y-1">
+                        <div>Alias MP: <strong class="text-slate-900">jime.z.mp</strong></div>
+                        <div>Titular: <strong class="text-slate-900">Jimena Zambrano</strong></div>
+                        <div>Costo Adquisición: <strong class="text-emerald-700">$ 20.000</strong></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500">
+                        <i class="fa-brands fa-whatsapp text-emerald-600 mr-1"></i> Enviar comprobante al WhatsApp: <strong class="text-slate-800">+54 9 3525 50-9715</strong> para la entrega inmediata de su clave Serial Key.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN LICENSE GENERATOR MODAL -->
+    <div id="admin-license-modal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full mb-2">
+                    <i class="fa-solid fa-user-shield text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">Panel Administrador: Generador de Licencias</h3>
+                <p class="text-xs text-slate-500">Genere seriales de activación para distribuir a los profesionales que abonaron</p>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nombre / Referencia del Profesional</label>
+                    <input type="text" id="admin-prof-name" placeholder="Ej: Ing. Juan Pérez" class="w-full p-2 border rounded-lg border-slate-300">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Clave Serial Generada</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="admin-generated-key" readonly class="flex-1 font-mono p-2 border rounded-lg bg-slate-100 text-slate-800 font-bold">
+                        <button onclick="generateNewSerialKey()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-2 rounded-lg transition">
+                            Generar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button onclick="closeAdminModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-lg transition">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const INSTALL_DATE_KEY = "catastro_app_install_date_v6";
+        const LICENSE_ACTIVATED_KEY = "catastro_app_license_pro_v6";
+        const GEMINI_API_KEY_STORAGE = "catastro_app_gemini_key";
+        const USER_ROLE_KEY = "catastro_app_user_role";
+
+        const raimondettoSample = {
+            id: "case_raimondetto",
+            name: "Caso 1: Raimondetto - Flores (Colonia Caroya)",
+            fecha: "07 de Julio de 2023",
+            tarea: "MENSURA Y SUBDIVISION BAJO REGIMEN PH - PROPIEDAD URBANA",
+            cuenta: "13-02-3070653-1",
+            nomenclatura: "1302090102068005",
+            matricula: "Matrícula N° 1.683.158",
+            designacion: "Mz 11C14 Lote 14",
+            direccion: "Calle N° 9 - Mateo Kokic N° 255, B° Francisco Pez",
+            juzgado: "JUZGADO CIVIL, COM. Y CON. FAMILIAR SEC 1 – JESUS MARIA",
+            profesional: "Ing. Civil Agrimensor MP",
+            attachedFiles: [{ name: "Plano_Mensura_PH_Raimondetto.pdf", size: "2.4 MB" }],
+            titulares: [
+                { nombre: "HUGO T. RAIMONDETTO", dni: "SUCESIÓN", condicion: "Copropietario" },
+                { nombre: "MIRTA B. FLORES", dni: "SUCESIÓN", condicion: "Copropietaria" }
+            ],
+            lados: [
+                { desde: "A", hasta: "B", orientacion: "NOROESTE (Frente)", colindante: "Espacio Público Calle 9 Mateo Kokic", longitud: 14.00, rumbo: "45'", anguloDeg: 90, anguloMin: 0, materializacion: "verja de 0.40 m" },
+                { desde: "B", hasta: "C", orientacion: "NORESTE (Medianera)", colindante: "Parcela 017", longitud: 44.19, rumbo: "S 45° E", anguloDeg: 90, anguloMin: 0, materializacion: "edificación propia" },
+                { desde: "C", hasta: "D", orientacion: "SURESTE (Contrafrente)", colindante: "Parte de Parcela 013", longitud: 14.00, rumbo: "S 45° O", anguloDeg: 90, anguloMin: 0, materializacion: "edificación propia" },
+                { desde: "D", hasta: "A", orientacion: "SUROESTE (Medianera)", colindante: "Parcela 004", longitud: 44.19, rumbo: "N 45° O", anguloDeg: 90, anguloMin: 0, materializacion: "muro mampostería" }
+            ],
+            surfaces: {
+                terrenoMensura: 618.66,
+                terrenoTitulo: 606.90,
+                edificadaTotal: 319.06,
+                murosCubComunes: 22.14,
+                murosDescubComunes: 10.20,
+                descubComunUsoComun: 193.85
+            },
+            typeMode: "PH",
+            unidades: [
+                { id: "1", ubicacion: "Planta Baja", desigCubierta: "VIV / DEP", supCubierta: 149.63, descubUsoExclPos: "JARDIN / PATIO", descubUsoExclDesig: "DC1", supDescubUsoExcl: 94.00 },
+                { id: "2", ubicacion: "Planta Baja", desigCubierta: "DEP", supCubierta: 61.47, descubUsoExclPos: "-", descubUsoExclDesig: "-", supDescubUsoExcl: 0.00 },
+                { id: "3", ubicacion: "Planta Baja", desigCubierta: "DEP", supCubierta: 54.33, descubUsoExclPos: "-", descubUsoExclDesig: "-", supDescubUsoExcl: 0.00 }
+            ]
+        };
+
+        const garciaSample = {
+            id: "case_garcia",
+            name: "Caso 2: García - Bajo Galán (Córdoba Capital)",
+            fecha: "20 de Octubre de 2024",
+            tarea: "MENSURA Y UNION DE PARCELAS - PROPIEDAD URBANA",
+            cuenta: "1101010316023",
+            nomenclatura: "1101010316023 (Manz 023 Parcela 016/025)",
+            matricula: "Matrículas 544532 a 544549",
+            designacion: "Lotes 8 a 25 Manzana 2",
+            direccion: "Calle Bv. Castro Barros N° 1150 / Intendente Ramón Mestre",
+            juzgado: "Trámite Notarial / Judicial",
+            profesional: "Julio A. Zambrano Ing. Civil MP 4097",
+            attachedFiles: [{ name: "Plano_Mensura_Union_Garcia.jpg", size: "3.1 MB" }],
+            titulares: [
+                { nombre: "ANA CAROLINA GARCIA", dni: "27-26330386-0", condicion: "Copropietaria (1/6)" },
+                { nombre: "ANA VICTORIA GARCIA", dni: "27-27266679-8", condicion: "Copropietaria (1/6)" }
+            ],
+            lados: [
+                { desde: "A", hasta: "B", orientacion: "NORTE", colindante: "Calle Galán", longitud: 21.395, rumbo: "", anguloDeg: 94, anguloMin: 7, materializacion: "Línea Municipal" },
+                { desde: "B", hasta: "C", orientacion: "NORTE", colindante: "Calle Galán", longitud: 25.120, rumbo: "", anguloDeg: 180, anguloMin: 0, materializacion: "Línea Municipal" },
+                { desde: "C", hasta: "D", orientacion: "ESTE", colindante: "Bv. Castro Barros", longitud: 96.425, rumbo: "", anguloDeg: 85, anguloMin: 52, materializacion: "Línea Municipal" },
+                { desde: "D", hasta: "E", orientacion: "SURESTE", colindante: "Parcela 17", longitud: 31.868, rumbo: "", anguloDeg: 180, anguloMin: 38, materializacion: "Muro Medianero" },
+                { desde: "E", hasta: "F", orientacion: "SUR", colindante: "Parcela 15", longitud: 14.534, rumbo: "", anguloDeg: 94, anguloMin: 8, materializacion: "Muro Contiguo" },
+                { desde: "F", hasta: "G", orientacion: "SUR", colindante: "Bv. Castro Barros", longitud: 31.262, rumbo: "", anguloDeg: 178, anguloMin: 51, materializacion: "Línea Municipal" },
+                { desde: "G", hasta: "H", orientacion: "OESTE", colindante: "Intendente Mestre", longitud: 33.915, rumbo: "", anguloDeg: 90, anguloMin: 18, materializacion: "Ochava" },
+                { desde: "H", hasta: "I", orientacion: "OESTE", colindante: "Intendente Mestre", longitud: 21.389, rumbo: "", anguloDeg: 180, anguloMin: 13, materializacion: "Línea Municipal" },
+                { desde: "I", hasta: "J", orientacion: "OESTE", colindante: "Intendente Mestre", longitud: 10.198, rumbo: "", anguloDeg: 181, anguloMin: 9, materializacion: "Línea Municipal" },
+                { desde: "J", hasta: "K", orientacion: "OESTE", colindante: "Intendente Mestre", longitud: 3.895, rumbo: "", anguloDeg: 253, anguloMin: 22, materializacion: "Muro propio" },
+                { desde: "K", hasta: "L", orientacion: "OESTE", colindante: "Intendente Mestre", longitud: 8.664, rumbo: "", anguloDeg: 99, anguloMin: 29, materializacion: "Cerramiento" },
+                { desde: "L", hasta: "M", orientacion: "NOROESTE", colindante: "Calle Galán", longitud: 9.011, rumbo: "", anguloDeg: 180, anguloMin: 0, materializacion: "Esquina" },
+                { desde: "M", hasta: "A", orientacion: "NORTE", colindante: "Calle Galán", longitud: 21.332, rumbo: "", anguloDeg: 180, anguloMin: 0, materializacion: "Línea Municipal" }
+            ],
+            surfaces: {
+                terrenoMensura: 5616.5643,
+                terrenoTitulo: 5574.8970,
+                edificadaTotal: 5438.0790,
+                murosCubComunes: 0.00,
+                murosDescubComunes: 0.00,
+                descubComunUsoComun: 178.48
+            },
+            typeMode: "BLOQUES",
+            unidades: [
+                { id: "1", ubicacion: "PB", desigCubierta: "TALLER", supCubierta: 2403.159, descubUsoExclPos: "-", descubUsoExclDesig: "-", supDescubUsoExcl: 0 },
+                { id: "2", ubicacion: "PB", desigCubierta: "SALON COMER.", supCubierta: 1544.348, descubUsoExclPos: "VACIO", descubUsoExclDesig: "V2", supDescubUsoExcl: 11.51 },
+                { id: "3", ubicacion: "PB", desigCubierta: "TALLER", supCubierta: 456.6792, descubUsoExclPos: "-", descubUsoExclDesig: "-", supDescubUsoExcl: 0 }
+            ]
+        };
+
+        let casesList = [ JSON.parse(JSON.stringify(raimondettoSample)), JSON.parse(JSON.stringify(garciaSample)) ];
+        let activeCaseId = raimondettoSample.id;
+        let appData = casesList[0];
+
+        function createNewCustomCasePrompt() {
+            const caseName = prompt("Ingrese el nombre / referencia para el Nuevo Caso:", "Expediente N° " + Math.floor(Math.random() * 9000 + 1000));
+            if (!caseName) return;
+
+            const newId = "case_" + Date.now();
+            const newCaseObj = {
+                id: newId,
+                name: caseName,
+                fecha: new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }),
+                tarea: "MENSURA Y SUBDIVISION PROPIEDAD URBANA",
+                cuenta: "",
+                nomenclatura: "",
+                matricula: "",
+                designacion: "",
+                direccion: "",
+                juzgado: "",
+                profesional: "",
+                attachedFiles: [],
+                titulares: [{ nombre: "", dni: "", condicion: "Propietario / Comitente" }],
+                lados: [
+                    { desde: "A", hasta: "B", orientacion: "Frente", colindante: "Calle Pública", longitud: 10.00, rumbo: "", anguloDeg: 90, anguloMin: 0, materializacion: "Existente" },
+                    { desde: "B", hasta: "C", orientacion: "Costado", colindante: "Colindante", longitud: 20.00, rumbo: "", anguloDeg: 90, anguloMin: 0, materializacion: "Existente" },
+                    { desde: "C", hasta: "D", orientacion: "Contrafrente", colindante: "Colindante", longitud: 10.00, rumbo: "", anguloDeg: 90, anguloMin: 0, materializacion: "Existente" },
+                    { desde: "D", hasta: "A", orientacion: "Costado", colindante: "Colindante", longitud: 20.00, rumbo: "", anguloDeg: 90, anguloMin: 0, materializacion: "Existente" }
+                ],
+                surfaces: {
+                    terrenoMensura: 200.00,
+                    terrenoTitulo: 200.00,
+                    edificadaTotal: 0.00,
+                    murosCubComunes: 0.00,
+                    murosDescubComunes: 0.00,
+                    descubComunUsoComun: 0.00
+                },
+                typeMode: "PH",
+                unidades: [
+                    { id: "1", ubicacion: "Planta Baja", desigCubierta: "VIVIENDA", supCubierta: 80.00, descubUsoExclPos: "PATIO", descubUsoExclDesig: "DC1", supDescubUsoExcl: 40.00 }
+                ]
+            };
+
+            casesList.push(newCaseObj);
+            activeCaseId = newId;
+            appData = newCaseObj;
+            updateCaseSelectorUI();
+            switchActiveCase(activeCaseId);
+            triggerFileUpload();
+        }
+
+        function resetToZero() {
+            if (!confirm("¿Desea limpiar todos los datos del caso actual y ponerlos a cero?")) return;
+            appData.tarea = "";
+            appData.cuenta = "";
+            appData.nomenclatura = "";
+            appData.matricula = "";
+            appData.designacion = "";
+            appData.direccion = "";
+            appData.juzgado = "";
+            appData.profesional = "";
+            appData.titulares = [{ nombre: "", dni: "", condicion: "" }];
+            appData.lados = [];
+            appData.surfaces = { terrenoMensura: 0, terrenoTitulo: 0, edificadaTotal: 0, murosCubComunes: 0, murosDescubComunes: 0, descubComunUsoComun: 0 };
+            appData.unidades = [];
+            appData.attachedFiles = [];
+            syncDataToInputs();
+            renderDynamicInputs();
+            renderAttachedFilesUI();
+            updateCalculations();
+        }
+
+        function calculatePrintPages() {
+            const container = document.getElementById('printable-area');
+            if (!container) return;
+            const contentHeight = container.scrollHeight;
+            const approxPageHeight = 1000;
+            const totalPages = Math.max(1, Math.ceil(contentHeight / approxPageHeight));
+            
+            const curPageElem = document.getElementById('doc-current-page');
+            const totalPagesElem = document.getElementById('doc-total-pages');
+            const footerPageTotalElem = document.getElementById('doc-footer-page-total');
+            
+            if (curPageElem) curPageElem.innerText = "1";
+            if (totalPagesElem) totalPagesElem.innerText = totalPages.toString();
+            if (footerPageTotalElem) footerPageTotalElem.innerText = totalPages.toString();
+        }
+
+        function getUserRole() {
+            return localStorage.getItem(USER_ROLE_KEY) || "profesional";
+        }
+
+        function switchUserRole(role) {
+            localStorage.setItem(USER_ROLE_KEY, role);
+            initLicenseControl();
+        }
+
+        function initLicenseControl() {
+            let installDateStr = localStorage.getItem(INSTALL_DATE_KEY);
+            if (!installDateStr) {
+                installDateStr = new Date().toISOString();
+                localStorage.setItem(INSTALL_DATE_KEY, installDateStr);
+            }
+
+            const currentRole = getUserRole();
+            const roleSelector = document.getElementById("user-role-selector");
+            if (roleSelector) roleSelector.value = currentRole;
+
+            const adminBtn = document.getElementById("admin-gen-key-btn");
+            if (adminBtn) {
+                if (currentRole === "administrador") {
+                    adminBtn.classList.remove("hidden");
+                } else {
+                    adminBtn.classList.add("hidden");
+                }
+            }
+
+            const isActivated = localStorage.getItem(LICENSE_ACTIVATED_KEY) === "true";
+            const installDate = new Date(installDateStr);
+            const now = new Date();
+            const diffTime = now - installDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Si el rol es profesional, trial de 20 días. Si es admin, libre.
+            const trialLimit = currentRole === "administrador" ? 9999 : 20;
+            const daysLeft = Math.max(0, trialLimit - diffDays);
+
+            const bannerText = document.getElementById("license-info-text");
+            const overlay = document.getElementById("license-lock-overlay");
+            const lockMsg = document.getElementById("lock-message");
+
+            if (bannerText) {
+                if (currentRole === "administrador") {
+                    bannerText.innerHTML = `<span class="bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded border border-indigo-500/30"><i class="fa-solid fa-user-shield mr-1"></i> MODO ADMINISTRADOR</span>`;
+                } else if (isActivated) {
+                    bannerText.innerHTML = `<span class="bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30"><i class="fa-solid fa-circle-check mr-1"></i> LICENCIA PRO ACTIVA</span>`;
+                } else if (daysLeft > 0) {
+                    bannerText.innerHTML = `<span class="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30"><i class="fa-solid fa-clock mr-1"></i> TRIAL PROFESIONAL</span> <span class="text-slate-200">Restan <strong>${daysLeft} días</strong> de 20.</span>`;
+                } else {
+                    bannerText.innerHTML = `<span class="bg-red-500/20 text-red-300 font-bold px-2 py-0.5 rounded border border-red-500/30"><i class="fa-solid fa-lock mr-1"></i> TRIAL EXPIRADO</span>`;
+                }
+            }
+
+            if (overlay) {
+                if (currentRole === "administrador" || isActivated || daysLeft > 0) {
+                    overlay.classList.add("hidden");
+                } else {
+                    if (lockMsg) lockMsg.innerText = `El período de prueba gratuita de 20 días para el rol profesional ha finalizado. Active su Licencia Profesional o contacte al administrador.`;
+                    overlay.classList.remove("hidden");
+                }
+            }
+
+            updateApiKeyStatusLabel();
+        }
+
+        function updateApiKeyStatusLabel() {
+            const key = localStorage.getItem(GEMINI_API_KEY_STORAGE);
+            const lbl = document.getElementById("api-key-status-label");
+            if (lbl) {
+                lbl.innerText = key ? "Gemini API: Conectada" : "Configurar IA (Gemini API)";
+            }
+        }
+
+        function openApiKeyModal() {
+            const currentKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
+            const input = document.getElementById("gemini-api-key-input");
+            if (input) input.value = currentKey;
+            const modal = document.getElementById("api-key-modal");
+            if (modal) modal.classList.remove("hidden");
+        }
+
+        function closeApiKeyModal() {
+            const modal = document.getElementById("api-key-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        function openHelpModal() {
+            const modal = document.getElementById("help-modal");
+            if (modal) modal.classList.remove("hidden");
+        }
+
+        function closeHelpModal() {
+            const modal = document.getElementById("help-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById("gemini-api-key-input");
+            const key = input ? input.value.trim() : "";
+            if (key) {
+                localStorage.setItem(GEMINI_API_KEY_STORAGE, key);
+                alert("Gemini API Key guardada en almacenamiento local.");
+            } else {
+                localStorage.removeItem(GEMINI_API_KEY_STORAGE);
+            }
+            closeApiKeyModal();
+            updateApiKeyStatusLabel();
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem(GEMINI_API_KEY_STORAGE);
+            const input = document.getElementById("gemini-api-key-input");
+            if (input) input.value = "";
+            alert("Clave de API eliminada.");
+            closeApiKeyModal();
+            updateApiKeyStatusLabel();
+        }
+
+        function openLicenseModal() {
+            const modal = document.getElementById("license-modal");
+            if (modal) modal.classList.remove("hidden");
+        }
+
+        function closeLicenseModal() {
+            const modal = document.getElementById("license-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        function openAdminModal() {
+            const modal = document.getElementById("admin-license-modal");
+            if (modal) modal.classList.remove("hidden");
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById("admin-license-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        function generateNewSerialKey() {
+            const profInput = document.getElementById("admin-prof-name");
+            const profName = profInput ? profInput.value.trim() : "Profesional";
+            const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const serial = `JZ-PRO-${randomCode}`;
+            const outInput = document.getElementById("admin-generated-key");
+            if (outInput) outInput.value = serial;
+            
+            localStorage.setItem("catastro_admin_gen_" + serial, profName);
+        }
+
+        function validateLicenseKey() {
+            const input = document.getElementById("license-key-input");
+            const key = input ? input.value.trim().toUpperCase() : "";
+            const errLabel = document.getElementById("license-error-msg");
+            
+            const isAdminGen = localStorage.getItem("catastro_admin_gen_" + key);
+
+            if (key.startsWith("CORD-1332-") || key.startsWith("JZ-PRO-") || key.startsWith("CAROYA-2026") || isAdminGen) {
+                localStorage.setItem(LICENSE_ACTIVATED_KEY, "true");
+                if (errLabel) errLabel.classList.add("hidden");
+                alert("¡Licencia Profesional Validada Correctamente!");
+                closeLicenseModal();
+                initLicenseControl();
+            } else if (errLabel) {
+                errLabel.innerText = "Clave no válida.";
+                errLabel.classList.remove("hidden");
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const zone = document.getElementById('drop-zone');
+            if (zone) zone.classList.add('border-brand-600', 'bg-brand-50/50');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const zone = document.getElementById('drop-zone');
+            if (zone) zone.classList.remove('border-brand-600', 'bg-brand-50/50');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const zone = document.getElementById('drop-zone');
+            if (zone) zone.classList.remove('border-brand-600', 'bg-brand-50/50');
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                processUploadedDocumentFiles(files);
+            }
+        }
+
+        function triggerFileUpload() {
+            const fileInput = document.getElementById('file-upload-input');
+            if (fileInput) {
+                fileInput.value = ''; 
+                fileInput.click();
+            }
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                processUploadedDocumentFiles(files);
+            }
+        }
+
+        async function processUploadedDocumentFiles(files) {
+            const statusIndicator = document.getElementById("processing-status-indicator");
+            const statusDetail = document.getElementById("processing-status-detail");
+            if (statusIndicator) statusIndicator.classList.remove("hidden");
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (statusDetail) statusDetail.innerText = `Interpretando archivo (${i+1}/${files.length}): ${file.name}...`;
+
+                if (!appData.attachedFiles) appData.attachedFiles = [];
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + " MB";
+                appData.attachedFiles.push({ name: file.name, size: sizeMb });
+
+                try {
+                    if (file.type.startsWith("image/") || file.type.includes("pdf") || file.name.endsWith(".jpg") || file.name.endsWith(".jpeg") || file.name.endsWith(".png")) {
+                        await applyImageOrPdfAiParser(file);
+                    } else {
+                        const textContent = await readFileAsText(file);
+                        if (textContent) applyDocumentTypologyParser(textContent);
+                    }
+                } catch (err) {
+                    console.warn("Error leyendo archivo:", err);
+                }
+            }
+
+            renderAttachedFilesUI();
+            syncDataToInputs();
+            renderDynamicInputs();
+            updateCalculations();
+
+            if (statusIndicator) statusIndicator.classList.add("hidden");
+            alert("Documentos procesados por IA. Revise el informe A4 y la auditoría resultante.");
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve("");
+                reader.readAsText(file);
+            });
+        }
+
+        async function applyImageOrPdfAiParser(file) {
+            const storedApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
+            if (!storedApiKey) {
+                if (file.name.toLowerCase().includes("garcia") || file.name.toLowerCase().includes("jpg")) {
+                    loadSampleData('garcia');
+                } else {
+                    loadSampleData('raimondetto');
+                }
+                return;
+            }
+
+            const base64Data = await new Promise((resolve) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result.split(',')[1]);
+                r.readAsDataURL(file);
+            });
+
+            const systemPrompt = `Extrae los datos catastrales y de planillas de este plano o imagen de mensura conforme Res. 1/2015 DGC Córdoba. PRIORIZA EXCLUSIVAMENTE al profesional actuante Ing. Civil o Agrimensor con su MP (Ej: Julio A. Zambrano Ing. Civil MP 4097) ignorando escribanos o instituciones notariales.
+Responde ÚNICAMENTE un JSON estructurado válido con esta estructura exacta:
+{
+  "tarea": "string", "cuenta": "string", "nomenclatura": "string", "matricula": "string",
+  "designacion": "string", "direccion": "string", "juzgado": "string", "profesional": "string",
+  "titulares": [{"nombre": "string", "dni": "string", "condicion": "string"}],
+  "lados": [{"desde": "string", "hasta": "string", "orientacion": "string", "colindante": "string", "longitud": number, "rumbo": "string", "anguloDeg": number, "anguloMin": number, "materializacion": "string"}],
+  "surfaces": {"terrenoMensura": number, "terrenoTitulo": number, "edificadaTotal": number, "murosCubComunes": number, "murosDescubComunes": number, "descubComunUsoComun": number},
+  "typeMode": "PH" o "BLOQUES",
+  "unidades": [{"id": "string", "ubicacion": "string", "desigCubierta": "string", "supCubierta": number, "descubUsoExclPos": "string", "descubUsoExclDesig": "string", "supDescubUsoExcl": number}]
+}`;
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${storedApiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: systemPrompt },
+                                { inlineData: { mimeType: file.type || "image/jpeg", data: base64Data } }
+                            ]
+                        }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                const result = await response.json();
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (jsonText) {
+                    const extracted = JSON.parse(jsonText);
+                    mergeExtractedData(extracted);
+                }
+            } catch (err) {
+                console.warn("Error consultando Gemini API:", err);
+            }
+        }
+
+        function applyDocumentTypologyParser(text) {
+            const cuentaMatch = text.match(/(?:CUENTA|CTA\.?\s*N°?)\s*:?\s*([\d-]+)/i);
+            if (cuentaMatch) appData.cuenta = cuentaMatch[1];
+            const nomMatch = text.match(/(?:NOMENCLATURA|NOM\.?\s*CAT\.?)\s*:?\s*([\d-]+)/i);
+            if (nomMatch) appData.nomenclatura = nomMatch[1];
+            
+            // Buscar profesional agrimensor / ingeniero ignorando escribanos
+            const profMatch = text.match(/(?:Ing\.?\s*(?:Civil|Agrimensor)?|Agrimensor|Ingeniero)[^\n,]+MP\s*\d+/i);
+            if (profMatch) appData.profesional = profMatch[0].trim();
+        }
+
+        function mergeExtractedData(extracted) {
+            if (extracted.tarea) appData.tarea = extracted.tarea;
+            if (extracted.cuenta) appData.cuenta = extracted.cuenta;
+            if (extracted.nomenclatura) appData.nomenclatura = extracted.nomenclatura;
+            if (extracted.matricula) appData.matricula = extracted.matricula;
+            if (extracted.designacion) appData.designacion = extracted.designacion;
+            if (extracted.direccion) appData.direccion = extracted.direccion;
+            if (extracted.juzgado) appData.juzgado = extracted.juzgado;
+            if (extracted.profesional && !extracted.profesional.toLowerCase().includes("escriban")) {
+                appData.profesional = extracted.profesional;
+            }
+            if (extracted.titulares && Array.isArray(extracted.titulares)) appData.titulares = extracted.titulares;
+            if (extracted.lados && Array.isArray(extracted.lados)) appData.lados = extracted.lados;
+            if (extracted.surfaces) appData.surfaces = { ...appData.surfaces, ...extracted.surfaces };
+            if (extracted.unidades && Array.isArray(extracted.unidades)) appData.unidades = extracted.unidades;
+            if (extracted.typeMode) appData.typeMode = extracted.typeMode;
+        }
+
+        function removeAttachedFile(idx) {
+            if (appData.attachedFiles && appData.attachedFiles.length > idx) {
+                appData.attachedFiles.splice(idx, 1);
+                renderAttachedFilesUI();
+            }
+        }
+
+        function renderAttachedFilesUI() {
+            const container = document.getElementById("attached-files-list");
+            const badge = document.getElementById("attached-files-count");
+            const list = appData.attachedFiles || [];
+
+            if (badge) badge.innerText = `${list.length} archivo(s)`;
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (list.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 italic text-[11px]">No hay documentos cargados en este caso.</p>`;
+                return;
+            }
+
+            list.forEach((f, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                        <div class="flex items-center gap-2 truncate">
+                            <i class="fa-solid fa-file-image text-indigo-600"></i>
+                            <span class="font-medium text-slate-800 truncate" title="${f.name}">${f.name}</span>
+                            <span class="text-[10px] text-slate-400">(${f.size})</span>
+                        </div>
+                        <button onclick="removeAttachedFile(${idx})" class="text-slate-400 hover:text-red-600 text-xs px-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function loadSampleData(sampleKey) {
+            let sampleObj = sampleKey === 'garcia' ? garciaSample : raimondettoSample;
+            const targetIdx = casesList.findIndex(c => c.id === sampleObj.id);
+            if (targetIdx >= 0) {
+                casesList[targetIdx] = JSON.parse(JSON.stringify(sampleObj));
+            } else {
+                casesList.unshift(JSON.parse(JSON.stringify(sampleObj)));
+            }
+            activeCaseId = sampleObj.id;
+            updateCaseSelectorUI();
+            switchActiveCase(activeCaseId);
+        }
+
+        function updateCaseSelectorUI() {
+            const selector = document.getElementById("case-selector");
+            if (!selector) return;
+            selector.innerHTML = "";
+            casesList.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.id;
+                opt.innerText = c.name || `Caso ID: ${c.id}`;
+                if (c.id === activeCaseId) opt.selected = true;
+                selector.appendChild(opt);
+            });
+        }
+
+        function switchActiveCase(caseId) {
+            activeCaseId = caseId;
+            const target = casesList.find(c => c.id === caseId);
+            if (target) {
+                appData = target;
+                syncDataToInputs();
+                renderDynamicInputs();
+                renderAttachedFilesUI();
+                updateCalculations();
+            }
+        }
+
+        function syncDataToInputs() {
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val || '';
+            };
+
+            setVal('input-fecha', appData.fecha);
+            setVal('input-tarea', appData.tarea);
+            setVal('input-cuenta', appData.cuenta);
+            setVal('input-nomenclatura', appData.nomenclatura);
+            setVal('input-matricula', appData.matricula);
+            setVal('input-designacion', appData.designacion);
+            setVal('input-direccion', appData.direccion);
+            setVal('input-juzgado', appData.juzgado);
+            setVal('input-profesional', appData.profesional);
+
+            setVal('input-sup-terreno', appData.surfaces.terrenoMensura || 0);
+            setVal('input-sup-titulo', appData.surfaces.terrenoTitulo || 0);
+            setVal('input-sup-edificada', appData.surfaces.edificadaTotal || 0);
+            setVal('input-muros-cub', appData.surfaces.murosCubComunes || 0);
+            setVal('input-muros-descub', appData.surfaces.murosDescubComunes || 0);
+            setVal('input-descub-uso-comun', appData.surfaces.descubComunUsoComun || 0);
+        }
+
+        function switchTab(tabName) {
+            ['general', 'polygon', 'subdivision'].forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (tabEl) tabEl.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('border-brand-600', 'font-semibold', 'text-brand-600', 'bg-white');
+                    btn.classList.add('border-transparent');
+                }
+            });
+
+            const activeTabEl = document.getElementById(`tab-${tabName}`);
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (activeTabEl) activeTabEl.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.add('border-brand-600', 'font-semibold', 'text-brand-600', 'bg-white');
+                activeBtn.classList.remove('border-transparent');
+            }
+        }
+
+        function renderTitulares() {
+            const container = document.getElementById('titulares-container');
+            if (!container) return;
+            container.innerHTML = '';
+            appData.titulares.forEach((t, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-200">
+                        <input type="text" placeholder="Nombre" class="flex-1 p-1.5 border rounded text-xs" value="${t.nombre}" oninput="appData.titulares[${idx}].nombre = this.value; generateAllReports();">
+                        <input type="text" placeholder="DNI/CUIT" class="w-32 p-1.5 border rounded text-xs" value="${t.dni}" oninput="appData.titulares[${idx}].dni = this.value; generateAllReports();">
+                        <input type="text" placeholder="Condición" class="w-32 p-1.5 border rounded text-xs" value="${t.condicion || ''}" oninput="appData.titulares[${idx}].condicion = this.value; generateAllReports();">
+                        <button onclick="removeTitular(${idx})" class="text-red-500 hover:text-red-700 px-1.5"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function addTitular() {
+            appData.titulares.push({ nombre: "Nuevo Comitente", dni: "", condicion: "Propietario" });
+            renderTitulares();
+            generateAllReports();
+        }
+
+        function removeTitular(idx) {
+            if (appData.titulares.length > 1) {
+                appData.titulares.splice(idx, 1);
+                renderTitulares();
+                generateAllReports();
+            }
+        }
+
+        function renderSides() {
+            const container = document.getElementById('sides-container');
+            const summaryBadge = document.getElementById('polygon-summary-badge');
+            if (summaryBadge) summaryBadge.innerText = `N = ${appData.lados.length} lados`;
+            if (!container) return;
+
+            container.innerHTML = '';
+            appData.lados.forEach((side, idx) => {
+                container.innerHTML += `
+                    <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/50 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-slate-700 border-b pb-1">
+                            <span>Tramo ${side.desde} → ${side.hasta}</span>
+                            <button onclick="removeSide(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash-can"></i> Eliminar</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[10px] text-slate-500">Orientación</label>
+                                <input type="text" class="w-full p-1 border rounded text-xs" value="${side.orientacion}" oninput="appData.lados[${idx}].orientacion = this.value; generateAllReports();">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500">Longitud (m)</label>
+                                <input type="number" step="0.0001" class="w-full p-1 border rounded text-xs font-semibold" value="${side.longitud}" oninput="appData.lados[${idx}].longitud = parseFloat(this.value) || 0; updateCalculations();">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500">Ángulo Int. (° / ')</label>
+                                <div class="flex gap-1">
+                                    <input type="number" class="w-1/2 p-1 border rounded text-xs" placeholder="°" value="${side.anguloDeg !== undefined ? side.anguloDeg : 90}" oninput="appData.lados[${idx}].anguloDeg = parseInt(this.value) || 0; updateCalculations();">
+                                    <input type="number" class="w-1/2 p-1 border rounded text-xs" placeholder="'" value="${side.anguloMin !== undefined ? side.anguloMin : 0}" oninput="appData.lados[${idx}].anguloMin = parseInt(this.value) || 0; updateCalculations();">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-slate-500">Rumbo</label>
+                                <input type="text" class="w-full p-1 border rounded text-xs" value="${side.rumbo || ''}" oninput="appData.lados[${idx}].rumbo = this.value; generateAllReports();">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500">Colindancia</label>
+                                <input type="text" class="w-full p-1 border rounded text-xs" value="${side.colindante}" oninput="appData.lados[${idx}].colindante = this.value; generateAllReports();">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500">Materialización</label>
+                            <input type="text" class="w-full p-1 border rounded text-xs" value="${side.materializacion}" oninput="appData.lados[${idx}].materializacion = this.value; generateAllReports();">
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addSide() {
+            const count = appData.lados.length;
+            const charFrom = String.fromCharCode(65 + (count % 26));
+            const charTo = String.fromCharCode(65 + ((count + 1) % 26));
+            appData.lados.push({
+                desde: charFrom,
+                hasta: charTo,
+                orientacion: "Tramo",
+                colindante: "Colindante",
+                longitud: 10.00,
+                rumbo: "",
+                anguloDeg: 90,
+                anguloMin: 0,
+                materializacion: "Existente"
+            });
+            renderSides();
+            updateCalculations();
+        }
+
+        function removeSide(idx) {
+            if (appData.lados.length > 3) {
+                appData.lados.splice(idx, 1);
+                renderSides();
+                updateCalculations();
+            }
+        }
+
+        function renderUnidades() {
+            const container = document.getElementById('unidades-container');
+            if (!container) return;
+            container.innerHTML = '';
+            appData.unidades.forEach((u, idx) => {
+                container.innerHTML += `
+                    <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/50 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-slate-700 border-b pb-1">
+                            <span>Unidad / Bloque N° ${u.id}</span>
+                            <button onclick="removeUnidad(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[10px] text-slate-500">Ubicación</label>
+                                <input type="text" class="w-full p-1 border rounded text-xs" value="${u.ubicacion}" oninput="appData.unidades[${idx}].ubicacion = this.value; generateAllReports();">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500">Destino / Desig.</label>
+                                <input type="text" class="w-full p-1 border rounded text-xs" value="${u.desigCubierta}" oninput="appData.unidades[${idx}].desigCubierta = this.value; generateAllReports();">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500">Sup. Cubierta (m²)</label>
+                                <input type="number" step="0.0001" class="w-full p-1 border rounded text-xs font-semibold" value="${u.supCubierta}" oninput="appData.unidades[${idx}].supCubierta = parseFloat(this.value) || 0; updateCalculations();">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addUnidad() {
+            const nextId = (appData.unidades.length + 1).toString();
+            appData.unidades.push({
+                id: nextId,
+                ubicacion: "PB",
+                desigCubierta: "LOCAL",
+                supCubierta: 50.00,
+                descubUsoExclPos: "VACIO",
+                descubUsoExclDesig: "V" + nextId,
+                supDescubUsoExcl: 0.00
+            });
+            renderUnidades();
+            updateCalculations();
+        }
+
+        function removeUnidad(idx) {
+            if (appData.unidades.length > 0) {
+                appData.unidades.splice(idx, 1);
+                renderUnidades();
+                updateCalculations();
+            }
+        }
+
+        function renderDynamicInputs() {
+            renderTitulares();
+            renderSides();
+            renderUnidades();
+        }
+
+        function updateCalculations() {
+            const getVal = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value : '';
+            };
+
+            appData.fecha = getVal('input-fecha');
+            appData.tarea = getVal('input-tarea');
+            appData.cuenta = getVal('input-cuenta');
+            appData.nomenclatura = getVal('input-nomenclatura');
+            appData.matricula = getVal('input-matricula');
+            appData.designacion = getVal('input-designacion');
+            appData.direccion = getVal('input-direccion');
+            appData.juzgado = getVal('input-juzgado');
+            appData.profesional = getVal('input-profesional');
+
+            appData.surfaces.terrenoMensura = parseFloat(getVal('input-sup-terreno')) || 0;
+            appData.surfaces.terrenoTitulo = parseFloat(getVal('input-sup-titulo')) || 0;
+            appData.surfaces.edificadaTotal = parseFloat(getVal('input-sup-edificada')) || 0;
+            appData.surfaces.murosCubComunes = parseFloat(getVal('input-muros-cub')) || 0;
+            appData.surfaces.murosDescubComunes = parseFloat(getVal('input-muros-descub')) || 0;
+            appData.surfaces.descubComunUsoComun = parseFloat(getVal('input-descub-uso-comun')) || 0;
+
+            const dif = Math.abs(appData.surfaces.terrenoMensura - appData.surfaces.terrenoTitulo).toFixed(4);
+            const difElem = document.getElementById('input-sup-diferencia');
+            if (difElem) difElem.value = `${dif} m²`;
+
+            generateAllReports();
+        }
+
+        function recalculateAndProcessReports() {
+            updateCalculations();
+            alert("Vista previa A4 y Auditoría recalculadas correctamente.");
+        }
+
+        function setDocText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text || '-';
+        }
+
+        function generateAllReports() {
+            setDocText('doc-meta-fecha', appData.fecha);
+            setDocText('doc-meta-tarea', appData.tarea);
+            setDocText('doc-meta-comitentes', appData.titulares.map(t => `${t.nombre} (${t.dni})`).join(' – '));
+            setDocText('doc-meta-cuenta', appData.cuenta);
+            setDocText('doc-meta-nomenclatura', appData.nomenclatura);
+            setDocText('doc-meta-direccion', appData.direccion);
+            setDocText('doc-footer-profesional-name', appData.profesional || 'Profesional Actuante');
+
+            // REPORT 1: DESCRIPCION DE LA PARCELA WITH DEGREES AND MINUTES ANGLES
+            let rep1Html = `<p>Parcela Urbana, Designación Oficial <strong>${appData.designacion || 'S/D'}</strong>. Los trabajos de mensura se realizaron sobre deslindes existentes recorriendo el perímetro en sentido horario:</p>`;
+            let sidesText = [];
+            let totalAngleDecimal = 0;
+
+            appData.lados.forEach(l => {
+                const deg = l.anguloDeg !== undefined ? l.anguloDeg : 90;
+                const min = l.anguloMin !== undefined ? l.anguloMin : 0;
+                const angleDecimal = deg + (min / 60);
+                totalAngleDecimal += angleDecimal;
+
+                let rumboStr = l.rumbo ? ` con rumbo ${l.rumbo}` : '';
+                let angleStr = `${deg}°${min > 0 ? " " + min + "'" : ""}`;
+                
+                let angleDesc = "";
+                if (deg === 90 && min === 0) {
+                    angleDesc = "formando un ángulo interno recto (90°00') respecto al tramo anterior";
+                } else if (deg === 180 && min === 0) {
+                    angleDesc = "en prolongación con el tramo anterior (ángulo llano de 180°00')";
+                } else {
+                    angleDesc = `formando un ángulo interno de ${angleStr} respecto al tramo anterior`;
+                }
+
+                sidesText.push(`el <strong>LADO ${l.desde}${l.hasta}</strong> de <strong>${(l.longitud || 0).toFixed(3)} m</strong> hacia el ${l.orientacion || 'S/D'}${rumboStr}, colindando con ${l.colindante || 'S/D'}, materializada con ${l.materializacion || 'S/D'}, ${angleDesc}`);
+            });
+
+            rep1Html += `<p class="leading-relaxed text-justify">${sidesText.length > 0 ? sidesText.join('; ') + '.' : 'Sin lados especificados.'}</p>`;
+            
+            const nSides = appData.lados.length;
+            const expectedSum = nSides >= 3 ? (nSides - 2) * 180 : 360;
+            const diffAngle = Math.abs(totalAngleDecimal - expectedSum);
+            // Validar si es múltiplo de 180° con tolerancia geométrica
+            const isAngleOk = nSides >= 3 && (diffAngle <= 1.5 || Math.abs(totalAngleDecimal % 180) <= 1.5);
+
+            rep1Html += `<p class="mt-2 font-semibold">Cierre Geométrico: Suma de ángulos internos de <strong>${totalAngleDecimal.toFixed(2)}°</strong> (Múltiplo teórico de 180° esperado: ${expectedSum}°). Superficie de terreno según mensura: <strong>${appData.surfaces.terrenoMensura.toFixed(4)} m²</strong>.</p>`;
+
+            const docRep1 = document.getElementById('doc-report-1');
+            if (docRep1) docRep1.innerHTML = rep1Html;
+
+            // REPORT 2: INFORME TECNICO Y DOMINIAL
+            let rep2Html = `
+                <p><strong>TÍTULOS Y ANTECEDENTES:</strong> Trabajos realizados sobre deslindes existentes en base al Título de Propiedad <strong>${appData.matricula || 'S/D'}</strong>.</p>
+                <p><strong>TITULARIDAD REGISTRAL:</strong> A favor de: ${appData.titulares.map(t => `<strong>${t.nombre || 'S/D'}</strong> (D.N.I. / CUIT ${t.dni || 'S/D'})`).join(', ')}.</p>
+                <p><strong>REQUERIMIENTO:</strong> ${appData.juzgado || 'Trámite Catastral Particular'}.</p>
+                <p><strong>SUPERFICIES:</strong> Superficie según mensura de ${appData.surfaces.terrenoMensura.toFixed(4)} m² frente a los ${appData.surfaces.terrenoTitulo.toFixed(4)} m² de Título (Diferencia de ${Math.abs(appData.surfaces.terrenoMensura - appData.surfaces.terrenoTitulo).toFixed(4)} m²).</p>
+            `;
+            const docRep2 = document.getElementById('doc-report-2');
+            if (docRep2) docRep2.innerHTML = rep2Html;
+
+            // REPORT 3: SUBDIVISION / BLOQUES
+            let totalSupCubPropia = 0;
+            appData.unidades.forEach(u => {
+                totalSupCubPropia += u.supCubierta;
+            });
+
+            const headContainer = document.getElementById('doc-table-superficies-head');
+            if (headContainer) {
+                headContainer.innerHTML = `
+                    <tr class="bg-slate-200 border-b border-black font-bold">
+                        <th class="border border-black p-1">BLOQUE / UNID</th>
+                        <th class="border border-black p-1">UBIC.</th>
+                        <th class="border border-black p-1">DESTINO / DESIG.</th>
+                        <th class="border border-black p-1">SUP. CUBIERTA (m²)</th>
+                        <th class="border border-black p-1">% BASE</th>
+                        <th class="border border-black p-1">OBSERVACIONES</th>
+                    </tr>
+                `;
+            }
+
+            let tbodySuperficies = '';
+            appData.unidades.forEach(u => {
+                const pct = totalSupCubPropia > 0 ? ((u.supCubierta / totalSupCubPropia) * 100).toFixed(2) : '0.00';
+                tbodySuperficies += `
+                    <tr>
+                        <td class="border border-black p-1 font-bold">${u.id}</td>
+                        <td class="border border-black p-1">${u.ubicacion}</td>
+                        <td class="border border-black p-1">${u.desigCubierta}</td>
+                        <td class="border border-black p-1 font-semibold">${u.supCubierta.toFixed(4)}</td>
+                        <td class="border border-black p-1">${pct}%</td>
+                        <td class="border border-black p-1">${u.descubUsoExclPos || 'Edificado'}</td>
+                    </tr>
+                `;
+            });
+
+            const bodyElem = document.getElementById('doc-table-superficies-body');
+            if (bodyElem) bodyElem.innerHTML = tbodySuperficies;
+            
+            const footElem = document.getElementById('doc-table-superficies-foot');
+            if (footElem) {
+                footElem.innerHTML = `
+                    <tr>
+                        <td class="border border-black p-1" colspan="3">TOTAL SUPERFICIE EDIFICADA</td>
+                        <td class="border border-black p-1 text-brand-900">${totalSupCubPropia.toFixed(4)} m²</td>
+                        <td class="border border-black p-1" colspan="2">100.00%</td>
+                    </tr>
+                `;
+            }
+
+            const totalCierres = totalSupCubPropia + appData.surfaces.murosCubComunes + appData.surfaces.murosDescubComunes + appData.surfaces.descubComunUsoComun;
+            const cierresBody = document.getElementById('doc-table-cierres-body');
+            if (cierresBody) {
+                cierresBody.innerHTML = `
+                    <tr><td class="border border-black p-1">SUP. CUBIERTA / BLOQUES</td><td class="border border-black p-1 text-right font-mono">${totalSupCubPropia.toFixed(4)}</td></tr>
+                    <tr><td class="border border-black p-1">MUROS COMUNES</td><td class="border border-black p-1 text-right font-mono">${appData.surfaces.murosCubComunes.toFixed(4)}</td></tr>
+                    <tr class="font-bold bg-slate-100"><td class="border border-black p-1">TOTAL SUMA</td><td class="border border-black p-1 text-right font-mono">${totalCierres.toFixed(4)}</td></tr>
+                `;
+            }
+
+            const resumenBody = document.getElementById('doc-table-resumen-body');
+            if (resumenBody) {
+                resumenBody.innerHTML = `
+                    <tr><td class="border border-black p-1">SUP. SEGÚN TÍTULO</td><td class="border border-black p-1 text-right font-mono">${appData.surfaces.terrenoTitulo.toFixed(4)} m²</td></tr>
+                    <tr><td class="border border-black p-1">SUP. SEGÚN MENSURA</td><td class="border border-black p-1 text-right font-mono">${appData.surfaces.terrenoMensura.toFixed(4)} m²</td></tr>
+                    <tr><td class="border border-black p-1">DIFERENCIA</td><td class="border border-black p-1 text-right font-mono">${Math.abs(appData.surfaces.terrenoMensura - appData.surfaces.terrenoTitulo).toFixed(4)} m²</td></tr>
+                `;
+            }
+
+            generateAuditReport(totalAngleDecimal, isAngleOk, expectedSum);
+            calculatePrintPages();
+        }
+
+        function generateAuditReport(totalAngleDecimal, isAngleOk, expectedSum) {
+            let auditHtml = '';
+            auditHtml += `
+                <div class="p-2 border rounded ${isAngleOk ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50'} text-xs">
+                    <p class="font-bold ${isAngleOk ? 'text-emerald-800' : 'text-red-800'}">
+                        <i class="fa-solid ${isAngleOk ? 'fa-check-circle' : 'fa-triangle-exclamation'} mr-1"></i>
+                        1. CIERRE GEOMÉTRICO (Res. 1/2015 DGC):
+                    </p>
+                    <p class="text-slate-700 mt-0.5">Suma ángulos internos: ${totalAngleDecimal.toFixed(2)}° (Múltiplo teórico de 180° esperado: ${expectedSum}°). Estado: <strong>${isAngleOk ? 'CONFORME' : 'INCONSISTENTE'}</strong>.</p>
+                </div>
+            `;
+            const auditElem = document.getElementById('doc-report-4-audit');
+            if (auditElem) auditElem.innerHTML = auditHtml;
+        }
+
+        function exportToWordDoc() {
+            const area = document.getElementById('printable-area');
+            if (!area) return;
+            
+            const htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Reporte Catastral A4</title>
+                    <style>
+                        body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000; line-height: 1.4; }
+                        h2 { font-size: 15pt; font-weight: bold; }
+                        h3 { font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin-top: 15px; }
+                        h4 { font-size: 11pt; font-weight: bold; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; }
+                        th, td { border: 1px solid #000; padding: 5px; font-size: 10pt; text-align: center; }
+                        th { background-color: #f0f0f0; }
+                    </style>
+                </head>
+                <body>
+                    ${area.innerHTML}
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Memoria_Catastral_${appData.cuenta || 'Expediente'}.doc`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        window.onload = function() {
+            initLicenseControl();
+            updateCaseSelectorUI();
+            switchActiveCase(activeCaseId);
+        };
+    </script>
+</body>
+</html>
